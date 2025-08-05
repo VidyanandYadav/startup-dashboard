@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 # reducing the space just after sidebar and by page_title when we load on browser then there will be Startup Analysis showing instead of Streamlit
 st.set_page_config(layout="wide",page_title='StartUp Analysis')
 
+
+# 🌟 Add header right after page config
+st.markdown(
+    """
+    ### 🚀 Indian Startup Funding Dashboard  
+    """
+)
+
 # Load data
 df = pd.read_csv('startup_cleaned.csv')
 
@@ -181,3 +189,11 @@ else:
     btn2 = st.sidebar.button('Find Investor Details')
     if btn2:
         load_investor_details(selected_investor)
+
+
+
+st.markdown("---")
+st.markdown(
+    "Made with ❤️ by [Vidyanand Yadav](https://github.com/VidyanandYadav) | "
+    "Data sourced from Startup Funding Dataset"
+)
