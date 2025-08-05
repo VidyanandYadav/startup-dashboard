@@ -43,8 +43,15 @@ def load_overall_analysis():
 
     temp_df['x_axis'] = temp_df['month'].astype('str')+ '_' + temp_df['year'].astype('str')
 
+    # Adding this two line cause on x_axis label year is showing as 1.0_2015.0 and 7.0_2016 for July 2016 etc
+    import calendar
+    temp_df['x_axis'] = temp_df['month'].apply(lambda x: calendar.month_abbr[int(x)]) + ' ' + temp_df['year'].astype(int).astype(str)
+
+
     fig3, ax3 = plt.subplots()
     ax3.plot(temp_df['x_axis'], temp_df['amount'])
+    plt.xticks(rotation=45)
+    ax3.set_xticks(ax3.get_xticks()[::6])
     st.pyplot(fig3)
 
 def load_investor_details(investor):
@@ -66,7 +73,7 @@ def load_investor_details(investor):
         ax.bar(big_series.index, big_series.values)
         st.pyplot(fig)
     with col2:
-        vertical_series = df[df['investors'].str.contains('IDG Ventures',na = False)].groupby('vertical')['amount'].sum()
+        vertical_series = df[df['investors'].str.contains(investor,na = False)].groupby('vertical')['amount'].sum()
         st.subheader('Sectors Invested In')
         fig1, ax1 = plt.subplots()
         ax1.pie(vertical_series,labels = vertical_series.index,autopct="%0.01f") # autopct = "%0.01f" is used to show percentage in pie chart
@@ -79,6 +86,55 @@ def load_investor_details(investor):
     ax2.plot(year_series.index, year_series.values)
     st.pyplot(fig2)
 
+def load_startup_details(startup):
+    st.title(startup)
+    # Filter data for the selected startup
+    startup_df = df[df['startup'].str.contains(startup, case=False, na=False)]
+
+
+    # 1. Most recent funding rounds
+    st.subheader('Most Recent Funding Rounds')
+    st.dataframe(startup_df[['date', 'startup', 'vertical', 'city', 'round', 'amount']].head())
+
+
+    col1, col2 = st.columns(2)
+    with col1:
+        yearly_funding = startup_df.groupby(startup_df['date'].dt.year)['amount'].sum()
+        st.subheader('Yearly Funding Trend')
+
+
+        fig1, ax1 = plt.subplots()
+        ax1.plot(yearly_funding.index, yearly_funding.values,marker = 'o')
+        ax1.set_ylabel('Funding Amount (Cr)')
+        st.pyplot(fig1)
+
+    with col2:
+        # Funding by round type
+        round_counts = startup_df.groupby('round')['amount'].sum().sort_values(ascending=False)
+        st.subheader('Funding By Round Type')
+        fig2, ax2 = plt.subplots()
+        ax2.bar(round_counts.index, round_counts.values)
+        plt.xticks(rotation = 45)
+        st.pyplot(fig2)
+
+
+    # Top Investors for this Startups
+    st.subheader('Top Investors in this Startup')
+    investors_list = (
+        startup_df['investors']
+        .dropna()
+        .astype(str)  # Ensure all are strings
+        .str.split(',')
+        .explode()  # Flatten instead of sum()
+        .str.strip()  # Remove whitespace
+    )
+
+    investors_series = investors_list.value_counts().head(5)
+
+    fig3, ax3 = plt.subplots()
+    ax3.bar(investors_series.index, investors_series.values)
+    plt.xticks(rotation = 45)
+    st.pyplot(fig3)
 
 # Clean basic whitespace
 df['startup'] = df['startup'].astype(str).str.strip()
@@ -96,9 +152,11 @@ if option == 'Overall Analysis':
 
 # Startup Analysis
 elif option == 'Startup':
-    st.sidebar.selectbox('Select StartUp', sorted(df['startup'].dropna().unique().tolist()))
-    btn2 = st.sidebar.button('Find Investor Analysis')
-    st.title('StartUp Analysis')
+    selected_startup = st.sidebar.selectbox('Select StartUp', sorted(df['startup'].dropna().unique().tolist()))
+    btn1 = st.sidebar.button('Find StartUp Details')
+    if btn1:
+        load_startup_details(selected_startup)
+    # st.title('StartUp Analysis')
 
 
 # Investor Analysis
@@ -107,9 +165,7 @@ else:
     # Handle missing values before splitting
     all_investors = df['investors'].dropna().str.split(',').sum()
     unique_investors = sorted(set(i.strip() for i in all_investors if isinstance(i, str)))
-    selected_investor = st.sidebar.selectbox('Select StartUp', unique_investors)
-    btn2 = st.sidebar.button('Find Investor Analysis')
+    selected_investor = st.sidebar.selectbox('Select Investors', unique_investors)
+    btn2 = st.sidebar.button('Find Investor Details')
     if btn2:
         load_investor_details(selected_investor)
-
-    # st.title('Investor Analysis')
