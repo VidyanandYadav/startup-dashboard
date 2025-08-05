@@ -91,6 +91,11 @@ def load_startup_details(startup):
     # Filter data for the selected startup
     startup_df = df[df['startup'].str.contains(startup, case=False, na=False)]
 
+    # Shows warning if sufficient data is not available instead of plotting empty graph
+    if startup_df.empty:
+        st.warning("No sufficient funding data available for this startup.")
+        return
+
 
     # 1. Most recent funding rounds
     st.subheader('Most Recent Funding Rounds')
@@ -152,14 +157,21 @@ if option == 'Overall Analysis':
 
 # Startup Analysis
 elif option == 'Startup':
-    selected_startup = st.sidebar.selectbox('Select StartUp', sorted(df['startup'].dropna().unique().tolist()))
+
+    # This below one line code is replaced by 3 lines code because when Select Startup then By default BYJU'S is at top and this contains
+    # Insufficient data and then shows graphs and data empty hence it's useful so by below code all the Startup with min data go to the bottom
+    # selected_startup = st.sidebar.selectbox('Select StartUp', sorted(df['startup'].dropna().unique().tolist()))
+
+
+    # Now the Startup having more Data Will be at top
+    startup_activity = df['startup'].value_counts()
+    sorted_startups = startup_activity.index.tolist()
+
+    selected_startup = st.sidebar.selectbox('Select StartUp', sorted_startups)
     btn1 = st.sidebar.button('Find StartUp Details')
     if btn1:
         load_startup_details(selected_startup)
-    # st.title('StartUp Analysis')
 
-
-# Investor Analysis
 else:
 
     # Handle missing values before splitting
